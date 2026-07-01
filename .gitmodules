@@ -1,0 +1,4 @@
+[submodule "third_party/FederatedScope"]
+	path = third_party/FederatedScope
+	url = https://github.com/alibaba/FederatedScope.git
+	branch = llm

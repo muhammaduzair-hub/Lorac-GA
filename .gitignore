@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ML checkpoints & weights (large binaries — commit JSON/CSV results only)
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+
+# Experiment tracking
+wandb/
+
+# Secrets
+.env
+.env.*
+
+# VS Code (keep settings.json)
+.vscode/*
+!.vscode/settings.json
+
+# Results: track JSON/CSV metadata, ignore large outputs
+results/**/*.pt
+results/**/*.bin
+results/**/*.safetensors
+
+# NOT ignored (explicit reminder):
+# third_party/   — git submodule, must stay tracked
+# results/       — small JSON/CSV committed; only large binaries above are ignored

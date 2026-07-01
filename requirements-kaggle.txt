@@ -1,0 +1,14 @@
+# Kaggle / GPU environment dependencies.
+# FederatedScope installs separately via:
+#   pip install -e third_party/FederatedScope
+# Run that AFTER this file inside the Kaggle notebook.
+
+transformers==4.36.0
+peft==0.7.0
+accelerate==0.25.0
+datasets>=2.16.0
+numpy>=1.24
+pyyaml>=6.0
+omegaconf>=2.3
+matplotlib>=3.7
+seaborn>=0.12
