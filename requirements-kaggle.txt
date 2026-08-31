@@ -1,14 +1,38 @@
-# Kaggle / GPU environment dependencies.
-# FederatedScope installs separately via:
-#   pip install -e third_party/FederatedScope
-# Run that AFTER this file inside the Kaggle notebook.
+# Kaggle / GPU environment.
+#
+# RULE: floors only (>=), never `==` and never an upper bound.
+# The Kaggle image already ships CUDA torch, numpy, pandas, matplotlib, seaborn,
+# transformers, datasets and accelerate. A floor that the image already meets is
+# a no-op; an `==` or `<` bound forces a DOWNGRADE and breaks the image.
+#
+# Learned the hard way (M2): pinning numpy<2 here — a constraint that only local
+# torch 2.2.0 needs — downgraded Kaggle to numpy 1.26.4 and broke ~20 image
+# packages (jax, cupy, opencv, shap, rasterio, tifffile, ...), and can also pull
+# in a CPU-only torch build.
+#
+# Reproducibility comes from the "env" block recorded in every results.json
+# (torch / transformers / peft / datasets / numpy versions + CUDA device + git
+# commit), not from freezing the Kaggle image.
+#
+# FederatedScope is NOT needed from M2 onward (Route B: our own FedAvg loop).
+# If a reference run ever needs it:
+#   pip install -e third_party/FederatedScope --no-deps
 
-transformers==4.36.0
-peft==0.7.0
-accelerate==0.25.0
-datasets==2.16.1
-numpy>=1.24,<2   # torch 2.2 wheels are built against numpy 1.x
-pyyaml>=6.0
+# --- core stack (imported by src/) ---------------------------------------
+torch>=2.0
+numpy>=1.24
+transformers>=4.36.0
+peft>=0.7.0
+datasets>=2.16.0
 omegaconf>=2.3
+pyyaml>=6.0
+
+# --- plots and reporting (notebooks, M6 analysis) -------------------------
 matplotlib>=3.7
 seaborn>=0.12
+pandas>=2.0
+
+# --- not currently imported, kept because the stack expects it ------------
+# accelerate is only required if we adopt the HuggingFace Trainer; our FedAvg
+# loop is plain torch. The Kaggle image ships it anyway.
+accelerate>=0.25.0

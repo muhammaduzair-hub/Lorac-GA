@@ -43,3 +43,23 @@ class TestParseArgs:
         args = parse_args(["--config", "c.yaml", "K=5", "R=2"])
         assert args.config == "c.yaml"
         assert args.overrides == ["K=5", "R=2"]
+
+
+class TestResultsPayload:
+    def test_results_json_records_config_env_and_history(self, tmp_path, monkeypatch):
+        import json
+
+        from src.fl import server
+
+        monkeypatch.setattr(
+            server, "run_federated",
+            lambda cfg: {"history": [{"round": 1, "test_acc": 0.8}],
+                         "adapter_size_mb": 2.9583, "final_acc": 0.8},
+        )
+        out = tmp_path / "run"
+        server.main(["--config", "configs/m2_baseline.yaml", f"output_dir={out}"])
+
+        payload = json.loads((out / "results.json").read_text())
+        assert payload["config"]["K"] == 10
+        assert payload["env"]["torch"]           # captured, not empty
+        assert payload["final_acc"] == 0.8

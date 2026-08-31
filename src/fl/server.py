@@ -15,6 +15,7 @@ from typing import Sequence
 from omegaconf import DictConfig, OmegaConf
 
 from src.fl.simulation import run_federated
+from src.utils.env_info import collect_env
 
 logger = logging.getLogger(__name__)
 
@@ -72,13 +73,16 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     args = parse_args(argv)
     cfg = build_config(args.config, args.overrides)
+    env = collect_env()
+    logger.info("Environment: %s", env)
     logger.info("Config:\n%s", OmegaConf.to_yaml(cfg))
 
     result = run_federated(cfg)
 
     output_dir = Path(cfg.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    payload = {"config": OmegaConf.to_container(cfg, resolve=True), **result}
+    payload = {"config": OmegaConf.to_container(cfg, resolve=True),
+               "env": env, **result}
     (output_dir / "results.json").write_text(json.dumps(payload, indent=2))
     logger.info("Final accuracy: %.4f", result["final_acc"])
 
