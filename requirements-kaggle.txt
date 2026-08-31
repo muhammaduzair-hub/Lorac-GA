@@ -14,6 +14,12 @@
 # (torch / transformers / peft / datasets / numpy versions + CUDA device + git
 # commit), not from freezing the Kaggle image.
 #
+# KNOWN KAGGLE PREFLIGHT (pip cannot express it, so it lives in the notebook):
+#   !pip uninstall -y torchao
+# peft>=0.19 raises ImportError when torchao is present but < 0.16 (the image
+# ships 0.10), and the LoRA dispatcher hits that check for every adapted module.
+# We never use torchao quantization, so removing it is the minimal fix.
+#
 # FederatedScope is NOT needed from M2 onward (Route B: our own FedAvg loop).
 # If a reference run ever needs it:
 #   pip install -e third_party/FederatedScope --no-deps
