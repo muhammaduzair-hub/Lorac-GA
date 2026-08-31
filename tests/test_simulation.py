@@ -7,7 +7,6 @@ from omegaconf import OmegaConf
 from src.fl import simulation
 from src.fl.simulation import fedavg_aggregate, run_federated, run_round, select_clients
 from src.models.lora_wrap import adapter_size_mb, get_adapter_state
-from tests.conftest import make_tiny_dataset
 
 
 class TestFedavgAggregate:
@@ -172,9 +171,9 @@ def smoke_cfg(tmp_path):
 
 
 @pytest.fixture
-def smoke_datasets():
-    return {"train": make_tiny_dataset(n=40, seed=1),
-            "eval": make_tiny_dataset(n=16, seed=2)}
+def smoke_datasets(dataset_factory):
+    return {"train": dataset_factory(n=40, seed=1),
+            "eval": dataset_factory(n=16, seed=2)}
 
 
 class TestRunFederated:

@@ -50,3 +50,14 @@ def tiny_model():
 @pytest.fixture
 def tiny_dataset():
     return make_tiny_dataset()
+
+
+@pytest.fixture
+def dataset_factory():
+    """Hand tests the dataset builder itself, for custom sizes and seeds.
+
+    Exposed as a fixture rather than imported across test modules: `tests/` is
+    not a package, and `from tests.conftest import ...` only resolves under some
+    pytest path-resolution modes (it fails on the Kaggle image).
+    """
+    return make_tiny_dataset
