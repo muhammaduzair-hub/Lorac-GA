@@ -9,7 +9,7 @@ Thesis budget-aware joint optimization karti hai: ek fixed uplink budget ke anda
 | # | Milestone | Hafte | Status | File |
 |---|-----------|-------|--------|------|
 | M1 | Environment & Pipeline Setup | 1–2 | ✅ COMPLETE | M1_Setup_Pipeline.md |
-| M2 | Federated LoRA Baseline (FedAvg, fixed K) | 3–5 | ⬜ | M2_Federated_Baseline.md |
+| M2 | Federated LoRA Baseline (FedAvg, fixed K) | 3–5 | 🔄 code done, Kaggle run baqi | M2_Federated_Baseline.md |
 | M3 | A(K, r) Surface Profiling | 6–8 | ⬜ | M3_AK_Profiling.md |
 | M4 | GA Integration & Joint (K*, r*) Selection | 9–10 | ⬜ | M4_GA_Integration.md |
 | M5 | Baseline Comparison & Full Evaluation | 11–13 | ⬜ | M5_Baseline_Comparison.md |

@@ -1,0 +1,29 @@
+# M2 — Federated LoRA baseline (FedAvg, fixed K) on GLUE SST-2.
+# Every value here is logged with the run; nothing is hard-coded in the code.
+
+# --- model / LoRA ---------------------------------------------------------
+model_name: distilbert-base-uncased
+num_labels: 2
+max_len: 128
+r: 8                     # LoRA rank (M3 sweeps this)
+lora_alpha: 16
+lora_dropout: 0.05
+
+# --- federated setup ------------------------------------------------------
+num_clients: 100         # K_max
+alpha_dirichlet: 0.3     # non-IID concentration
+min_samples_per_client: 1
+max_samples_per_client: 100   # null = use the client's full shard
+K: 10                    # clients per round (FIXED in M2; GA picks it in M4)
+R: 10                    # communication rounds
+
+# --- local training -------------------------------------------------------
+local_epochs: 1
+batch_size: 16
+eval_batch_size: 64
+lr: 2.0e-4
+
+# --- reproducibility / io -------------------------------------------------
+seed: 42
+device: auto             # auto | cuda | cpu
+output_dir: results/m2_baseline

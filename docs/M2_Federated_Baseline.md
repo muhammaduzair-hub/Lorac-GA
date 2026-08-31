@@ -4,12 +4,33 @@
 
 ## Definition of Done
 
-- [ ] SST-2 non-IID Dirichlet split (α=0.3, 100 clients) verified — distribution print/plot mojood
-- [ ] LoRA wrapper: trainable % (~0.5–1% of 66M) aur **S (adapter MB)** documented
-- [ ] Apna FedAvg loop: R=10 rounds, K=10 fixed, har round test accuracy logged
-- [ ] Accuracy reasonable: SST-2 par ~80–88% expect (55–60% par atka = kuch ghalat)
-- [ ] Results `results/m2_baseline/` mein (JSON + plot), GitHub par pushed
-- [ ] Unit tests: split function + LoRA wrapper + ek round ka aggregation
+- [x] SST-2 non-IID Dirichlet split (α=0.3, 100 clients) — `src/fl/dirichlet.py`, 13 unit tests; plot notebook cell 3 mein (Kaggle par render hoga)
+- [x] LoRA wrapper: trainable **739,586 / 67,694,596 = 1.093%**, **S = 2.9583 MB** (DistilBERT, r=8) — locally measured
+- [x] Apna FedAvg loop: `src/fl/simulation.py`, R/K config-driven, har round accuracy + comm logged, har round checkpoint + resume
+- [x] Accuracy sanity: centralized LoRA check 0.42 → **0.805** (1 epoch, 2000 samples, lr=2e-4) — 50% wala masla nahi hai
+- [ ] Full Kaggle run (R=10, K=10) → results `results/m2_baseline/` (JSON + plot), GitHub par pushed  ← **Part C baqi hai**
+- [x] Unit tests: split + LoRA wrapper + aggregation + round + resume — **104 passing**
+
+### Session 2 status (code done, run baqi)
+
+| File | Kya hai |
+|---|---|
+| `src/data/glue_loader.py` | SST-2 load + tokenize; eval split = GLUE `validation` (official `test` ke labels −1 hain) |
+| `src/fl/dirichlet.py` | label-wise Dirichlet split + empty-client redistribution + `summarize_split` |
+| `src/models/lora_wrap.py` | `apply_lora` / `build_lora_model` (rank ek asal argument — M3 ready), `adapter_size_mb` = S |
+| `src/fl/client.py` | `local_train` (AdamW, sirf adapters) + `evaluate` |
+| `src/fl/simulation.py` | `fedavg_aggregate`, `select_clients`, `run_round`, `run_federated` (resume ke saath) |
+| `src/fl/server.py` | CLI: `python -m src.fl.server --config configs/m2_baseline.yaml K=10 R=10` |
+| `src/utils/metrics.py`, `checkpoint.py` | accuracy, comm cost (2·K·S), per-round checkpoint/resume |
+| `configs/m2_baseline.yaml` | saare hyperparams (koi hard-code nahi) |
+| `notebooks/01_m2_baseline.ipynb` | bootstrap → split plot → S → smoke (R=2) → full (R=10) → plots → results push |
+
+**Local env note:** purana `venv/` toota hua tha (repo move + `pip` ka hard-coded path, aur sirf pytest installed). Ab conda env `lorac` (Python 3.11) use karein:
+```bash
+conda activate lorac      # ya: /Users/muhammaduzair/miniforge3/envs/lorac/bin/python
+python -m pytest tests/ -q
+```
+`numpy` ko `<2` pin kiya gaya hai — torch 2.2.0 wheels numpy 1.x ke against bane hain, numpy 2.x par crash karte hain.
 
 ## Architecture Note (sir se confirm)
 
