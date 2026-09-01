@@ -30,7 +30,7 @@
     "cuda_available": "True",
     "device_name": "Tesla T4",
     "platform": "Linux-6.12.90+-x86_64-with-glibc2.35",
-    "git_commit": "e34fde8"
+    "git_commit": "ca03cfc"
   },
   "history": [
     {
