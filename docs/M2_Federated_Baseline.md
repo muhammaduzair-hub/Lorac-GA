@@ -2,16 +2,46 @@
 
 > **Goal ek line mein:** DistilBERT + LoRA ko GLUE SST-2 par, 100-client non-IID split ke saath, FIXED K=10 par FedAvg se train karke pehli asal accuracy hasil karna. **GA is milestone mein nahi hai.**
 
+## Status: ✅ COMPLETE (Kaggle run 2026-09-01, commit `9d48854`)
+
 ## Definition of Done
 
-- [x] SST-2 non-IID Dirichlet split (α=0.3, 100 clients) — `src/fl/dirichlet.py`, 13 unit tests; plot notebook cell 3 mein (Kaggle par render hoga)
-- [x] LoRA wrapper: trainable **739,586 / 67,694,596 = 1.093%**, **S = 2.9583 MB** (DistilBERT, r=8) — locally measured
-- [x] Apna FedAvg loop: `src/fl/simulation.py`, R/K config-driven, har round accuracy + comm logged, har round checkpoint + resume
-- [x] Accuracy sanity: centralized LoRA check 0.42 → **0.805** (1 epoch, 2000 samples, lr=2e-4) — 50% wala masla nahi hai
-- [ ] Full Kaggle run (R=10, K=10) → results `results/m2_baseline/` (JSON + plot), GitHub par pushed  ← **Part C baqi hai**
-- [x] Unit tests: split + LoRA wrapper + aggregation + round + resume — **104 passing**
+- [x] SST-2 non-IID Dirichlet split (α=0.3, 100 clients) — shards **min=1, max=4733, mean=673.5**; bohot se clients tuqreeban single-class (`[193,0]`, `[2423,8]`, `[0,1148]`) → `split_summary.png`
+- [x] LoRA wrapper: trainable **739,586 / 67,694,596 = 1.093%**, **S = 2.9583 MB** (DistilBERT, r=8)
+- [x] Apna FedAvg loop: R=10, K=10, har round accuracy + comm logged, har round checkpoint + resume
+- [x] Accuracy: **85.21% final** (best 85.44% @ round 9) — 80–88% target band ke andar
+- [x] Results `results/m2_baseline/` mein (results.json + history.json + 2 PNG), GitHub par pushed
+- [x] Unit tests: split + LoRA wrapper + aggregation + round + resume — **115 passing**
 
-### Session 2 status (code done, run baqi)
+## M2 Final Numbers (thesis ke liye)
+
+| Metric | Value |
+|---|---|
+| Model | DistilBERT-base-uncased + LoRA (r=8, α=16, dropout=0.05, targets `q_lin`/`v_lin`) |
+| Task | GLUE SST-2 (eval = official `validation`, 872 samples; `test` ke labels −1 hain) |
+| Clients | 100, Dirichlet α=0.3, K=10 per round, R=10 rounds |
+| Trainable params | 739,586 / 67,694,596 = **1.093%** |
+| **S (per-client payload)** | **2.9583 MB** |
+| Per-round comm | 2·K·S = **59.17 MB** |
+| **Total comm** | **591.67 MB** |
+| **Final accuracy** | **85.21%** (best 85.44% @ round 9) |
+| Runtime | **9 min 43 s** on 1× Tesla T4 |
+| Seed | 42 (single seed — M5 mein multi-seed hoga) |
+
+Per-round accuracy: 0.634, 0.688, 0.611, **0.841**, 0.811, 0.839, 0.849, 0.844, **0.854**, 0.852
+
+### Do observations (M3/M4 ke liye ahem)
+
+1. **Accuracy round 4 par saturate ho jati hai.** Rounds 5–10 ne ~1% diya lekin comm 236 MB se 592 MB tak barh gaya. Cost model `C = R·K·r·s0` ke hisab se aadha budget ~1% accuracy ke liye kharch hua — ye seedha budget-allocation argument ko support karta hai, aur ye sawal uthata hai ke `R` bhi variable hona chahiye ya nahi.
+2. **Round 3 ka dip data volume ki wajah se tha, bug nahi.** Har round ke selected clients ke shard sizes jama karein: round 3 = 2,903 samples (acc 0.611, sab se kam), round 4 = 9,791 samples (acc 0.841). Non-IID skew mein **kaun se** K clients chunte hain utna hi matter karta hai jitna kitne — yehi tension GA ko M4 mein solve karni hai.
+
+### Environment jis par chala (results.json ke `env` block se)
+
+`python 3.12.13 · torch 2.10.0+cu128 · transformers 5.0.0 · peft 0.19.1 · datasets 5.0.0 · numpy 2.0.2 · Tesla T4`
+
+Note: ye CLAUDE.md §4 ke 2023-era pins (transformers 4.36 / peft 0.7) se aage hain. Kaggle image par woh pins force karna numpy 2.x ko todta hai (~20 packages), is liye har run apna exact environment `results.json` ke `env` block mein record karta hai.
+
+### Session 2 status
 
 | File | Kya hai |
 |---|---|
@@ -128,6 +158,17 @@ pytest -v; propose commit message + git commands (I run them).
 2. **Pehle SMOKE RUN** (R=2, 50 samples/client) — ~10–15 min. Ye pass ho to hi full run.
 3. Full run (R=10) — expect **1–3 ghante** T4 par. Checkpoint har round save hota hai; disconnect ho to resume.
 4. Results push → local pull → plot dekhein → sir ko bhejein.
+
+## Kaggle Gotchas (M2 mein asal mein pesh aaye)
+
+| Problem | Hal |
+|---|---|
+| `Torch not compiled with CUDA enabled` | P100 accelerator select tha (sm_60); Kaggle ka torch sm_70+ chahta hai. **GPU T4 x2** chunein. |
+| pip ne numpy 1.26.4 par downgrade kar ke ~20 packages tore | `requirements-kaggle.txt` mein sirf `>=` floors rakhein, kabhi `==` ya upper bound nahi. `numpy<2` sirf **local** constraint hai (torch 2.2.0). |
+| `ImportError: incompatible version of torchao (0.10.0)` | peft ≥0.19 ka LoRA dispatcher raise karta hai. Code mein hal ho chuka: `disable_incompatible_torchao_dispatch()` (`src/models/lora_wrap.py`). |
+| `ModuleNotFoundError: No module named 'src'` | `!` cell repo directory mein nahi tha. `!cd /kaggle/working/Lorac-GA && python -m ...` ek hi line mein chalayein. |
+| Run bina kuch kiye khatam, purani accuracy print | `output_dir` mein pehle se R rounds ke checkpoints maujood the → resume ne loop skip kar diya. Naya `output_dir` dein ya directory delete karein. |
+| `ModuleNotFoundError: No module named 'tests.conftest'` | `tests/` package nahi hai; cross-module import hata kar `dataset_factory` fixture use hoti hai. |
 
 ## Common Problems
 
