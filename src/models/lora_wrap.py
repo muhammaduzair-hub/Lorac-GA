@@ -11,6 +11,7 @@ this same wrapper.
 
 from __future__ import annotations
 
+import importlib
 import logging
 from typing import Mapping, Sequence
 
@@ -66,6 +67,8 @@ def apply_lora(
     """
     if r <= 0:
         raise ValueError(f"LoRA rank r must be > 0; got {r}")
+
+    disable_incompatible_torchao_dispatch()
 
     config = LoraConfig(
         task_type=TaskType.SEQ_CLS,
@@ -185,3 +188,50 @@ def adapter_size_mb(model: nn.Module) -> float:
         p.numel() * p.element_size() for p in model.parameters() if p.requires_grad
     )
     return total_bytes / 1e6
+
+
+_TORCHAO_DISPATCH_MODULE = "peft.tuners.lora.torchao"
+
+
+def disable_incompatible_torchao_dispatch() -> bool:
+    """Stop peft's torchao LoRA dispatcher from crashing on an old torchao.
+
+    peft >= 0.19 ships a dispatcher for torchao-quantized layers whose
+    availability check raises ``ImportError`` when torchao is installed but
+    older than 0.16 — which is exactly the Kaggle image (torchao 0.10). The
+    dispatcher runs for every adapted module, so ``get_peft_model`` dies before
+    any of our code executes.
+
+    Our backbones are never torchao-quantized, so the dispatcher's own
+    "not available -> skip me" branch is the correct outcome. This replaces the
+    raising check with one that reports False, and leaves a healthy install
+    alone.
+
+    Returns:
+        True if the check was replaced, False if nothing needed doing.
+
+    Raises:
+        ImportError: If the check fails for a reason unrelated to the torchao
+            version, which would be a real problem worth surfacing.
+    """
+    try:
+        module = importlib.import_module(_TORCHAO_DISPATCH_MODULE)
+    except ImportError:
+        return False  # peft too old to have the dispatcher; nothing to disarm.
+
+    checker = getattr(module, "is_torchao_available", None)
+    if checker is None or module is None:
+        return False
+
+    try:
+        checker()
+    except ImportError as exc:
+        if "torchao" not in str(exc):
+            raise
+        module.is_torchao_available = lambda: False
+        logger.warning(
+            "Disabled peft's torchao LoRA dispatcher (%s). Our models are not "
+            "torchao-quantized, so this is safe.", exc,
+        )
+        return True
+    return False
