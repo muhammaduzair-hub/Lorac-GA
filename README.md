@@ -175,7 +175,7 @@ Development was assisted by AI coding tools (Claude Code); all research design, 
 ## Author
 
 **Muhammad Uzair** (2500514) — Creative technology, Air University
-Supervisor: **Dr Tahir Akram**
+Supervisor: **Dr Adnan Aslam**
 
 ---
 
