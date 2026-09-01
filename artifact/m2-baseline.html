@@ -1,0 +1,907 @@
+<title>M2 Federated Baseline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500;600&display=swap">
+
+<style>
+:root {
+  --ground: #F4F7F7;
+  --card: #FFFFFF;
+  --ink: #0E1A1E;
+  --ink-2: #38484E;
+  --muted: #5F7076;
+  --hairline: #DBE3E5;
+  --hairline-soft: #E9EFF0;
+  --accuracy: #008B9E;
+  --cost: #AD5A18;
+  --neutral-mark: #93A3A8;
+  --band: rgba(0, 139, 158, 0.09);
+  --shadow: 0 1px 2px rgba(14, 26, 30, .05), 0 6px 20px rgba(14, 26, 30, .05);
+  --tip-bg: #0E1A1E;
+  --tip-ink: #F4F7F7;
+
+  --f-display: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --f-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --measure: 68ch;
+  --page: 980px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0B1316;
+    --card: #121D21;
+    --ink: #E6EFF1;
+    --ink-2: #BCCBCF;
+    --muted: #8DA1A8;
+    --hairline: #24343A;
+    --hairline-soft: #1B2A2F;
+    --accuracy: #2FA6B4;
+    --cost: #C6853F;
+    --neutral-mark: #6E8188;
+    --band: rgba(47, 166, 180, 0.12);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 22px rgba(0, 0, 0, .28);
+    --tip-bg: #E6EFF1;
+    --tip-ink: #0B1316;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground: #0B1316;
+  --card: #121D21;
+  --ink: #E6EFF1;
+  --ink-2: #BCCBCF;
+  --muted: #8DA1A8;
+  --hairline: #24343A;
+  --hairline-soft: #1B2A2F;
+  --accuracy: #2FA6B4;
+  --cost: #C6853F;
+  --neutral-mark: #6E8188;
+  --band: rgba(47, 166, 180, 0.12);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 22px rgba(0, 0, 0, .28);
+  --tip-bg: #E6EFF1;
+  --tip-ink: #0B1316;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 64px) clamp(18px, 4vw, 40px) 96px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(36px, 5vw, 56px);
+}
+
+/* ---------- masthead ---------- */
+
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+
+.masthead { display: flex; flex-direction: column; gap: 14px; }
+
+h1 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.1;
+  letter-spacing: -.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.standfirst {
+  font-size: clamp(17px, 2vw, 19px);
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: var(--measure);
+  margin: 0;
+}
+
+.status-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--accuracy) 40%, transparent);
+  color: var(--accuracy);
+  background: color-mix(in oklab, var(--accuracy) 8%, transparent);
+  font-weight: 500;
+  letter-spacing: .04em;
+}
+
+.chip::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accuracy);
+}
+
+/* ---------- stat band ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: 1px;
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.stat { background: var(--card); padding: 20px 22px; display: flex; flex-direction: column; gap: 6px; }
+
+.stat dt {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stat dd {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: clamp(26px, 3.4vw, 34px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat .unit { font-size: .5em; font-weight: 500; color: var(--muted); margin-left: 3px; font-family: var(--f-mono); letter-spacing: 0; }
+.stat .note { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.stat.is-accuracy dd { color: var(--accuracy); }
+.stat.is-cost dd { color: var(--cost); }
+
+/* ---------- sections ---------- */
+
+section { display: flex; flex-direction: column; gap: 18px; }
+
+h2 {
+  font-family: var(--f-display);
+  font-size: clamp(20px, 2.6vw, 25px);
+  font-weight: 600;
+  letter-spacing: -.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+h3 {
+  font-family: var(--f-body);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -.005em;
+}
+
+p { margin: 0; max-width: var(--measure); color: var(--ink-2); }
+p.lede { color: var(--ink-2); }
+strong { color: var(--ink); font-weight: 600; }
+.mono { font-family: var(--f-mono); font-size: .92em; font-variant-numeric: tabular-nums; }
+
+.section-head { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------- figure cards ---------- */
+
+.fig {
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 22px clamp(16px, 2.5vw, 26px) 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fig-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+.fig-title { font-family: var(--f-body); font-size: 15px; font-weight: 600; margin: 0; }
+.fig-sub { font-family: var(--f-mono); font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+.fig-note { font-size: 13.5px; color: var(--muted); line-height: 1.5; max-width: var(--measure); margin: 0; }
+
+.chart-wrap { position: relative; width: 100%; }
+svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+
+.axis-label, .tick { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
+.tick-strong { fill: var(--ink-2); }
+.grid-line { stroke: var(--hairline-soft); stroke-width: 1; }
+.axis-line { stroke: var(--hairline); stroke-width: 1; }
+.mark-label { font-family: var(--f-mono); font-size: 11.5px; font-weight: 500; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); align-items: center; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.swatch.line { height: 3px; border-radius: 2px; width: 16px; }
+
+/* diverging bins for the label-skew figure: SVG marks fill, HTML swatches paint */
+.bin-0 { fill: var(--cost); }
+.bin-1 { fill: color-mix(in oklab, var(--cost) 52%, var(--neutral-mark)); }
+.bin-2 { fill: var(--neutral-mark); }
+.bin-3 { fill: color-mix(in oklab, var(--accuracy) 52%, var(--neutral-mark)); }
+.bin-4 { fill: var(--accuracy); }
+.swatch.bin-0 { background: var(--cost); }
+.swatch.bin-1 { background: color-mix(in oklab, var(--cost) 52%, var(--neutral-mark)); }
+.swatch.bin-2 { background: var(--neutral-mark); }
+.swatch.bin-3 { background: color-mix(in oklab, var(--accuracy) 52%, var(--neutral-mark)); }
+.swatch.bin-4 { background: var(--accuracy); }
+
+/* ---------- tooltip ---------- */
+
+.tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--tip-bg);
+  color: var(--tip-ink);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  padding: 7px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .12s ease;
+  z-index: 5;
+  transform: translate(-50%, -100%);
+  font-variant-numeric: tabular-nums;
+}
+.tip.on { opacity: 1; }
+.tip b { font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------- tables ---------- */
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--hairline); border-radius: 10px; background: var(--card); }
+
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 480px; }
+
+th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--hairline-soft); vertical-align: top; }
+thead th {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  background: color-mix(in oklab, var(--ground) 55%, var(--card));
+}
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td code, p code, li code {
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  background: color-mix(in oklab, var(--muted) 12%, transparent);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* ---------- findings ---------- */
+
+.findings { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+.finding {
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.finding .tag {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--cost);
+}
+.finding p { font-size: 14.5px; max-width: none; }
+
+/* ---------- milestone rail ---------- */
+
+.rail { display: flex; flex-wrap: wrap; gap: 8px; }
+.rail-item {
+  font-family: var(--f-mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline);
+  color: var(--muted);
+  background: var(--card);
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.rail-item .m { font-weight: 600; color: var(--ink-2); }
+.rail-item.done { border-color: color-mix(in oklab, var(--accuracy) 45%, transparent); color: var(--accuracy); }
+.rail-item.done .m { color: var(--accuracy); }
+.rail-item.next { border-style: dashed; border-color: var(--muted); }
+
+/* ---------- footer ---------- */
+
+footer {
+  border-top: 1px solid var(--hairline);
+  padding-top: 20px;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+ul.plain { margin: 0; padding-left: 20px; color: var(--ink-2); max-width: var(--measure); }
+ul.plain li { margin-bottom: 6px; }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Milestone M2 &middot; LoRaC-GA thesis</p>
+    <h1>Federated LoRA baseline on SST-2</h1>
+    <p class="standfirst">
+      DistilBERT with LoRA adapters, trained across 100 simulated non-IID clients under FedAvg
+      with a fixed client count. This is the reference point every later milestone is measured
+      against &mdash; and the first evidence that the communication budget, not the accuracy,
+      is where the interesting problem lives.
+    </p>
+    <div class="status-line">
+      <span class="chip">Complete</span>
+      <span>1 Sept 2026</span>
+      <span>commit 9d48854</span>
+      <span>1&times; Tesla T4 &middot; 9 min 43 s</span>
+    </div>
+  </header>
+
+  <dl class="stats">
+    <div class="stat is-accuracy">
+      <dt>Final accuracy</dt>
+      <dd>85.21<span class="unit">%</span></dd>
+      <div class="note">Target band was 80&ndash;88%</div>
+    </div>
+    <div class="stat">
+      <dt>Adapter payload S</dt>
+      <dd>2.958<span class="unit">MB</span></dd>
+      <div class="note">1.093% of 67.7M parameters</div>
+    </div>
+    <div class="stat is-cost">
+      <dt>Total communication</dt>
+      <dd>591.7<span class="unit">MB</span></dd>
+      <div class="note">10 rounds &times; 2&middot;K&middot;S</div>
+    </div>
+    <div class="stat">
+      <dt>Tests passing</dt>
+      <dd>115</dd>
+      <div class="note">All offline, CPU-only</div>
+    </div>
+  </dl>
+
+  <section>
+    <div class="section-head">
+      <h2>What was built</h2>
+      <p class="lede">
+        A self-contained FedAvg simulation on HuggingFace transformers and PEFT &mdash; Route B,
+        with FederatedScope-LLM kept as an architectural reference rather than a runtime dependency.
+        One model instance is reused across all simulated clients; only adapter tensors are swapped,
+        so memory does not grow with <span class="mono">K</span>.
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Setting</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Model</td><td>DistilBERT-base-uncased + LoRA <span class="mono">r=8, &alpha;=16</span>, dropout 0.05, targets <code>q_lin</code> / <code>v_lin</code></td></tr>
+          <tr><td>Task</td><td>GLUE SST-2 &mdash; 67,349 train, 872 eval</td></tr>
+          <tr><td>Evaluation split</td><td>Official <code>validation</code>. The GLUE <code>test</code> split ships label <span class="mono">&minus;1</span>, so it cannot measure accuracy.</td></tr>
+          <tr><td>Federation</td><td>100 clients, Dirichlet <span class="mono">&alpha;=0.3</span>, <span class="mono">K=10</span> per round, <span class="mono">R=10</span> rounds</td></tr>
+          <tr><td>Local training</td><td>1 epoch, AdamW, <span class="mono">lr=2e-4</span>, batch 16</td></tr>
+          <tr><td>Trainable</td><td class="num">739,586 / 67,694,596 = 1.093%</td></tr>
+          <tr><td>Seed</td><td class="num">42 &mdash; single seed; multi-seed arrives in M5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Accuracy converges early. Cost does not stop.</h2>
+      <p class="lede">
+        Two panels, one x-axis. The model clears the target band at round 4 and then moves
+        roughly one point across the remaining six rounds &mdash; while communication keeps
+        accumulating at a flat 59.17&nbsp;MB per round, by construction.
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Evaluation accuracy per communication round</h3>
+        <span class="fig-sub">SST-2 validation, 872 samples</span>
+      </div>
+      <div class="chart-wrap" id="wrap-acc">
+        <svg class="chart" id="chart-acc" viewBox="0 0 720 300" role="img"
+             aria-label="Line chart of SST-2 accuracy across ten rounds, rising from 63.4% to 85.2% and entering the 80 to 88 percent target band at round four."></svg>
+        <div class="tip" id="tip-acc"></div>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch line" style="background: var(--accuracy)"></span> Accuracy</span>
+        <span class="legend-item"><span class="swatch" style="background: var(--band); border: 1px solid color-mix(in oklab, var(--accuracy) 30%, transparent)"></span> 80&ndash;88% target band</span>
+        <span class="legend-item"><span class="swatch line" style="background: var(--neutral-mark)"></span> Majority-class floor, 50.9%</span>
+      </div>
+    </div>
+
+    <div class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Cumulative communication</h3>
+        <span class="fig-sub">2 &middot; K &middot; S per round, download + upload</span>
+      </div>
+      <div class="chart-wrap" id="wrap-comm">
+        <svg class="chart" id="chart-comm" viewBox="0 0 720 250" role="img"
+             aria-label="Area chart of cumulative communication rising linearly from 59.17 megabytes at round one to 591.67 megabytes at round ten."></svg>
+        <div class="tip" id="tip-comm"></div>
+      </div>
+      <p class="fig-note">
+        Rounds 5&ndash;10 cost <strong>355&nbsp;MB</strong> &mdash; 60% of the run's entire budget &mdash;
+        and bought <strong>1.15 accuracy points</strong> over round 4's 84.06%.
+        Under the cost model <span class="mono">C = R&middot;K&middot;r&middot;s&#8320;</span>, that gap is the
+        thesis question in miniature.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>The round-3 dip was data, not a defect</h2>
+      <p class="lede">
+        Accuracy fell from 68.8% to 61.1% at round 3. Summing the shard sizes of each round's
+        ten sampled clients explains it: round 3 drew the smallest pool of the entire run,
+        round 4 the second largest.
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Training samples available per round</h3>
+        <span class="fig-sub">sum of the ten selected clients' shards</span>
+      </div>
+      <div class="chart-wrap" id="wrap-samples">
+        <svg class="chart" id="chart-samples" viewBox="0 0 720 220" role="img"
+             aria-label="Bar chart of samples per round, ranging from 3,317 at round three to 12,198 at round two."></svg>
+        <div class="tip" id="tip-samples"></div>
+      </div>
+      <p class="fig-note">
+        Under Dirichlet skew, <strong>which</strong> ten clients get drawn matters as much as how many.
+        That is precisely the tension the genetic algorithm has to navigate in M4 &mdash; and a reason
+        client count alone may be an incomplete decision variable.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>The split is genuinely non-IID</h2>
+      <p class="lede">
+        Dirichlet <span class="mono">&alpha;=0.3</span> across 100 clients produced shards spanning
+        1 to 4,733 samples. <strong>67 of 100 clients hold at least 90% of a single class</strong>,
+        so the baseline is not quietly training on near-IID data.
+      </p>
+    </div>
+
+    <div class="fig">
+      <div class="fig-head">
+        <h3 class="fig-title">Every client, sorted by shard size</h3>
+        <span class="fig-sub">bar height = samples (&radic; scale) &middot; colour = class balance</span>
+      </div>
+      <div class="chart-wrap" id="wrap-split">
+        <svg class="chart" id="chart-split" viewBox="0 0 720 240" role="img"
+             aria-label="One hundred bars sorted by shard size, coloured by class balance, showing most clients dominated by a single class."></svg>
+        <div class="tip" id="tip-split"></div>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch bin-sw bin-0"></span> &ge;90% negative</span>
+        <span class="legend-item"><span class="swatch bin-sw bin-1"></span> mostly negative</span>
+        <span class="legend-item"><span class="swatch bin-sw bin-2"></span> mixed</span>
+        <span class="legend-item"><span class="swatch bin-sw bin-3"></span> mostly positive</span>
+        <span class="legend-item"><span class="swatch bin-sw bin-4"></span> &ge;90% positive</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Two findings that shape M3 and M4</h2>
+    </div>
+    <div class="findings">
+      <article class="finding">
+        <span class="tag">Carries into M3</span>
+        <h3>Saturation arrives long before the budget is spent</h3>
+        <p>
+          Rounds 1&ndash;4 delivered 84.06%; rounds 5&ndash;10 added 1.15 points for 355&nbsp;MB.
+          If accuracy saturates in <span class="mono">R</span> the way the paper expects it to in
+          <span class="mono">K</span>, then treating <span class="mono">R</span> as fixed at 10
+          may be leaving budget on the table. Worth raising before the A(K,&thinsp;r) surface is profiled.
+        </p>
+      </article>
+      <article class="finding">
+        <span class="tag">Carries into M4</span>
+        <h3>Client identity, not just client count</h3>
+        <p>
+          A 3.7&times; swing in available samples between rounds moved accuracy by 23 points.
+          The GA optimises <span class="mono">K</span> under a budget, but two draws of the same
+          <span class="mono">K</span> are not equivalent under &alpha;=0.3. Expect variance across
+          seeds &mdash; which is exactly why M5 runs more than one.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Engineering log</h2>
+      <p class="lede">
+        Every failure hit on the way to the run, and its resolution. M3 uses the same Kaggle image,
+        so these are recorded rather than remembered.
+      </p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Failure</th><th>Cause</th><th>Resolution</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">Torch not compiled with CUDA</td>
+            <td>P100 accelerator selected &mdash; compute capability sm_60, below the sm_70 floor of Kaggle's torch build</td>
+            <td>Select GPU T4 &times;2</td>
+          </tr>
+          <tr>
+            <td class="num">~20 image packages broken</td>
+            <td><code>numpy&lt;2</code> pinned in the Kaggle requirements &mdash; a constraint only local torch 2.2.0 needs</td>
+            <td>Floors (<code>&gt;=</code>) only; never <code>==</code> or an upper bound on a managed image</td>
+          </tr>
+          <tr>
+            <td class="num">ImportError: torchao 0.10.0</td>
+            <td>peft &ge;0.19's LoRA dispatcher raises when torchao is present but older than 0.16</td>
+            <td>Guard in <code>lora_wrap.py</code> disarms the dispatcher; our models are never quantized</td>
+          </tr>
+          <tr>
+            <td class="num">No module named 'src'</td>
+            <td>Notebook <code>%cd</code> does not survive a kernel restart</td>
+            <td>Single-line <code>cd &amp;&amp; python -m ...</code></td>
+          </tr>
+          <tr>
+            <td class="num">Run finished instantly, stale accuracy</td>
+            <td>Output directory already held R checkpoints, so resume skipped the loop and replayed old history</td>
+            <td>Fresh <code>output_dir</code> per run</td>
+          </tr>
+          <tr>
+            <td class="num">No module named 'tests.conftest'</td>
+            <td>Cross-module test import; <code>tests/</code> is not a package under Kaggle's pytest path mode</td>
+            <td>Shared builder exposed as a fixture</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fig-note">
+      Because the Kaggle image resolves its own versions, every run now records its exact stack in
+      <code>results.json</code>: <span class="mono">python 3.12.13 &middot; torch 2.10.0+cu128 &middot;
+      transformers 5.0.0 &middot; peft 0.19.1 &middot; datasets 5.0.0 &middot; numpy 2.0.2 &middot; Tesla T4</span>,
+      alongside the git commit. Reproducibility moved from frozen pins to recorded provenance.
+    </p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Where this sits</h2>
+    </div>
+    <div class="rail">
+      <span class="rail-item done"><span class="m">M1</span> Environment &amp; pipeline</span>
+      <span class="rail-item done"><span class="m">M2</span> Federated baseline</span>
+      <span class="rail-item next"><span class="m">M3</span> A(K,&thinsp;r) surface profiling</span>
+      <span class="rail-item"><span class="m">M4</span> GA joint (K*, r*)</span>
+      <span class="rail-item"><span class="m">M5</span> Baseline comparison</span>
+      <span class="rail-item"><span class="m">M6</span> Analysis &amp; writing</span>
+    </div>
+    <ul class="plain">
+      <li><strong>Next:</strong> M3 profiles the accuracy surface across client count and LoRA rank. The wrapper already takes <span class="mono">r</span> as a real argument, so the rank sweep needs no new code.</li>
+      <li><strong>Budget note:</strong> this run took under 10 minutes on one T4, against a milestone estimate of 1&ndash;3 hours. M3's ~24-cell surface is the expensive one; the measured throughput here makes it plannable.</li>
+      <li><strong>Open:</strong> two tests use <code>dataset["col"].tolist()</code>, which breaks on datasets 5.0.0. Production code is unaffected &mdash; <code>get_labels</code> returns identical arrays on both versions &mdash; but the Kaggle suite reports 113 of 115 until it is fixed.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>LoRaC-GA &mdash; bandwidth-aware client selection for federated LoRA fine-tuning</div>
+    <div>Muhammad Uzair &middot; Air University &middot; results/m2_baseline/results.json</div>
+  </footer>
+
+</div>
+
+<script>
+const ROUNDS = [
+  {r:1, acc:0.6342, n:4672,  comm:59.17},
+  {r:2, acc:0.6881, n:12198, comm:118.33},
+  {r:3, acc:0.6112, n:3317,  comm:177.50},
+  {r:4, acc:0.8406, n:9714,  comm:236.67},
+  {r:5, acc:0.8108, n:4696,  comm:295.83},
+  {r:6, acc:0.8394, n:7888,  comm:355.00},
+  {r:7, acc:0.8486, n:8649,  comm:414.17},
+  {r:8, acc:0.8440, n:4447,  comm:473.34},
+  {r:9, acc:0.8544, n:4691,  comm:532.50},
+  {r:10,acc:0.8521, n:5799,  comm:591.67}
+];
+
+const SPLIT = [
+  {s:4733,p:0.019},{s:3131,p:0.923},{s:3084,p:0.910},{s:2949,p:0.251},{s:2778,p:0.694},
+  {s:2431,p:0.003},{s:2005,p:0.132},{s:1964,p:0.001},{s:1938,p:0.088},{s:1849,p:0.996},
+  {s:1722,p:0.045},{s:1691,p:0.991},{s:1668,p:0.903},{s:1640,p:0.998},{s:1540,p:0.906},
+  {s:1351,p:0.993},{s:1311,p:0.180},{s:1254,p:0.927},{s:1233,p:0.409},{s:1148,p:1.000},
+  {s:1055,p:0.992},{s:1023,p:0.956},{s:1007,p:0.480},{s:914,p:0.969},{s:901,p:0.034},
+  {s:898,p:0.011},{s:897,p:0.318},{s:808,p:0.915},{s:797,p:0.189},{s:786,p:0.528},
+  {s:765,p:0.435},{s:744,p:0.997},{s:686,p:0.956},{s:673,p:0.994},{s:573,p:0.021},
+  {s:525,p:0.503},{s:517,p:0.002},{s:509,p:0.951},{s:509,p:0.807},{s:501,p:0.998},
+  {s:500,p:0.994},{s:494,p:0.464},{s:484,p:0.719},{s:480,p:0.077},{s:459,p:0.911},
+  {s:452,p:1.000},{s:398,p:0.995},{s:378,p:0.188},{s:377,p:0.369},{s:364,p:0.709},
+  {s:349,p:0.756},{s:323,p:0.972},{s:313,p:0.955},{s:307,p:0.717},{s:290,p:0.421},
+  {s:265,p:0.985},{s:257,p:1.000},{s:250,p:0.284},{s:218,p:0.413},{s:215,p:0.591},
+  {s:215,p:0.005},{s:210,p:1.000},{s:208,p:1.000},{s:204,p:0.848},{s:193,p:0.000},
+  {s:182,p:0.940},{s:162,p:0.377},{s:157,p:0.516},{s:145,p:1.000},{s:144,p:0.993},
+  {s:144,p:0.174},{s:142,p:1.000},{s:140,p:0.029},{s:130,p:0.015},{s:126,p:0.976},
+  {s:116,p:0.810},{s:113,p:1.000},{s:105,p:0.990},{s:88,p:0.852},{s:83,p:0.060},
+  {s:81,p:0.148},{s:78,p:0.013},{s:71,p:0.972},{s:64,p:0.031},{s:59,p:0.034},
+  {s:57,p:0.947},{s:44,p:0.159},{s:44,p:1.000},{s:33,p:0.788},{s:30,p:0.967},
+  {s:27,p:0.963},{s:15,p:1.000},{s:14,p:0.071},{s:10,p:0.000},{s:10,p:0.000},
+  {s:10,p:0.500},{s:9,p:0.000},{s:3,p:1.000},{s:1,p:0.000},{s:1,p:0.000}
+];
+
+const NS = "http://www.w3.org/2000/svg";
+const el = (name, attrs = {}, text) => {
+  const node = document.createElementNS(NS, name);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
+
+function tipFor(wrapId, tipId) {
+  const wrap = document.getElementById(wrapId);
+  const tip = document.getElementById(tipId);
+  return {
+    show(evt, html) {
+      tip.innerHTML = html;
+      const box = wrap.getBoundingClientRect();
+      tip.style.left = (evt.clientX - box.left) + "px";
+      tip.style.top = (evt.clientY - box.top - 12) + "px";
+      tip.classList.add("on");
+    },
+    hide() { tip.classList.remove("on"); }
+  };
+}
+
+/* ---------- accuracy line ---------- */
+(function accuracyChart() {
+  const svg = document.getElementById("chart-acc");
+  const W = 720, H = 300, m = { t: 22, r: 58, b: 34, l: 46 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const yMin = 0.48, yMax = 0.92;
+  const x = i => m.l + (iw * i) / (ROUNDS.length - 1);
+  const y = v => m.t + ih * (1 - (v - yMin) / (yMax - yMin));
+  const tip = tipFor("wrap-acc", "tip-acc");
+
+  svg.appendChild(el("rect", {
+    x: m.l, y: y(0.88), width: iw, height: y(0.80) - y(0.88),
+    fill: "var(--band)", rx: 2
+  }));
+  svg.appendChild(el("text", {
+    x: m.l + iw + 8, y: y(0.84) + 4, class: "tick", "text-anchor": "start"
+  }, "target"));
+
+  [0.5, 0.6, 0.7, 0.8, 0.9].forEach(v => {
+    svg.appendChild(el("line", { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), class: "grid-line" }));
+    svg.appendChild(el("text", { x: m.l - 10, y: y(v) + 4, class: "tick", "text-anchor": "end" },
+      Math.round(v * 100) + "%"));
+  });
+
+  svg.appendChild(el("line", {
+    x1: m.l, x2: m.l + iw, y1: y(0.5092), y2: y(0.5092),
+    stroke: "var(--neutral-mark)", "stroke-width": 2, "stroke-dasharray": "3 4"
+  }));
+
+  const pts = ROUNDS.map((d, i) => [x(i), y(d.acc)]);
+  svg.appendChild(el("polyline", {
+    points: pts.map(p => p.join(",")).join(" "),
+    fill: "none", stroke: "var(--accuracy)", "stroke-width": 2,
+    "stroke-linejoin": "round", "stroke-linecap": "round"
+  }));
+
+  ROUNDS.forEach((d, i) => {
+    const last = i === ROUNDS.length - 1;
+    svg.appendChild(el("circle", {
+      cx: x(i), cy: y(d.acc), r: last ? 5 : 4,
+      fill: "var(--accuracy)", stroke: "var(--card)", "stroke-width": 2
+    }));
+    svg.appendChild(el("text", { x: x(i), y: H - 12, class: "tick", "text-anchor": "middle" }, d.r));
+
+    const hit = el("circle", { cx: x(i), cy: y(d.acc), r: 16, fill: "transparent" });
+    hit.addEventListener("mousemove", e => tip.show(e,
+      `<b>Round ${d.r}</b> &middot; ${(d.acc * 100).toFixed(2)}%<br>${d.n.toLocaleString()} samples &middot; ${d.comm.toFixed(2)} MB`));
+    hit.addEventListener("mouseleave", tip.hide);
+    svg.appendChild(hit);
+  });
+
+  const r4 = ROUNDS[3], r10 = ROUNDS[9];
+  svg.appendChild(el("text", {
+    x: x(3), y: y(r4.acc) - 14, class: "mark-label", fill: "var(--accuracy)", "text-anchor": "middle"
+  }, "84.06%"));
+  svg.appendChild(el("text", {
+    x: x(9) + 10, y: y(r10.acc) + 4, class: "mark-label", fill: "var(--accuracy)", "text-anchor": "start"
+  }, "85.21%"));
+})();
+
+/* ---------- cumulative communication ---------- */
+(function commChart() {
+  const svg = document.getElementById("chart-comm");
+  const W = 720, H = 250, m = { t: 20, r: 58, b: 34, l: 52 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const yMax = 650;
+  const x = i => m.l + (iw * i) / (ROUNDS.length - 1);
+  const y = v => m.t + ih * (1 - v / yMax);
+  const tip = tipFor("wrap-comm", "tip-comm");
+
+  [0, 200, 400, 600].forEach(v => {
+    svg.appendChild(el("line", { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), class: "grid-line" }));
+    svg.appendChild(el("text", { x: m.l - 10, y: y(v) + 4, class: "tick", "text-anchor": "end" }, v));
+  });
+  svg.appendChild(el("text", { x: m.l - 10, y: m.t - 6, class: "tick", "text-anchor": "end" }, "MB"));
+
+  const pts = ROUNDS.map((d, i) => [x(i), y(d.comm)]);
+  svg.appendChild(el("polygon", {
+    points: `${m.l},${y(0)} ` + pts.map(p => p.join(",")).join(" ") + ` ${x(9)},${y(0)}`,
+    fill: "var(--cost)", opacity: 0.12
+  }));
+  svg.appendChild(el("polyline", {
+    points: pts.map(p => p.join(",")).join(" "),
+    fill: "none", stroke: "var(--cost)", "stroke-width": 2, "stroke-linecap": "round"
+  }));
+
+  svg.appendChild(el("line", {
+    x1: x(3), x2: x(3), y1: m.t, y2: y(0),
+    stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "3 4"
+  }));
+  svg.appendChild(el("text", {
+    x: x(3) + 8, y: m.t + 12, class: "mark-label", fill: "var(--muted)", "text-anchor": "start"
+  }, "84.06% here"));
+  svg.appendChild(el("text", {
+    x: x(3) + 8, y: m.t + 27, class: "tick", "text-anchor": "start"
+  }, "236.67 MB spent"));
+
+  ROUNDS.forEach((d, i) => {
+    const last = i === ROUNDS.length - 1;
+    svg.appendChild(el("circle", {
+      cx: x(i), cy: y(d.comm), r: last ? 5 : 3.5,
+      fill: "var(--cost)", stroke: "var(--card)", "stroke-width": 2
+    }));
+    svg.appendChild(el("text", { x: x(i), y: H - 12, class: "tick", "text-anchor": "middle" }, d.r));
+    const hit = el("circle", { cx: x(i), cy: y(d.comm), r: 16, fill: "transparent" });
+    hit.addEventListener("mousemove", e => tip.show(e,
+      `<b>Round ${d.r}</b><br>${d.comm.toFixed(2)} MB cumulative`));
+    hit.addEventListener("mouseleave", tip.hide);
+    svg.appendChild(hit);
+  });
+
+  svg.appendChild(el("text", {
+    x: x(9) + 10, y: y(591.67) + 4, class: "mark-label", fill: "var(--cost)", "text-anchor": "start"
+  }, "591.7"));
+})();
+
+/* ---------- samples per round ---------- */
+(function samplesChart() {
+  const svg = document.getElementById("chart-samples");
+  const W = 720, H = 220, m = { t: 26, r: 20, b: 34, l: 52 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const yMax = 13000;
+  const bw = iw / ROUNDS.length;
+  const y = v => m.t + ih * (1 - v / yMax);
+  const tip = tipFor("wrap-samples", "tip-samples");
+
+  [0, 4000, 8000, 12000].forEach(v => {
+    svg.appendChild(el("line", { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), class: "grid-line" }));
+    svg.appendChild(el("text", { x: m.l - 10, y: y(v) + 4, class: "tick", "text-anchor": "end" },
+      v === 0 ? "0" : (v / 1000) + "k"));
+  });
+
+  ROUNDS.forEach((d, i) => {
+    const bx = m.l + i * bw + 2;
+    const w = bw - 4;
+    const notable = d.r === 3 || d.r === 4;
+    svg.appendChild(el("rect", {
+      x: bx, y: y(d.n), width: w, height: y(0) - y(d.n),
+      rx: 4, fill: notable ? "var(--accuracy)" : "var(--neutral-mark)",
+      opacity: notable ? 1 : 0.55
+    }));
+    svg.appendChild(el("text", { x: bx + w / 2, y: H - 12, class: "tick", "text-anchor": "middle" }, d.r));
+    if (notable) {
+      svg.appendChild(el("text", {
+        x: bx + w / 2, y: y(d.n) - 8, class: "mark-label",
+        fill: "var(--accuracy)", "text-anchor": "middle"
+      }, d.n.toLocaleString()));
+    }
+    const hit = el("rect", { x: bx, y: m.t, width: w, height: ih, fill: "transparent" });
+    hit.addEventListener("mousemove", e => tip.show(e,
+      `<b>Round ${d.r}</b><br>${d.n.toLocaleString()} samples &middot; ${(d.acc * 100).toFixed(2)}%`));
+    hit.addEventListener("mouseleave", tip.hide);
+    svg.appendChild(hit);
+  });
+
+  svg.appendChild(el("line", { x1: m.l, x2: m.l + iw, y1: y(0), y2: y(0), class: "axis-line" }));
+})();
+
+/* ---------- non-IID split ---------- */
+(function splitChart() {
+  const svg = document.getElementById("chart-split");
+  const W = 720, H = 240, m = { t: 22, r: 20, b: 40, l: 52 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const bw = iw / SPLIT.length;
+  const maxS = 4733;
+  const y = v => m.t + ih * (1 - Math.sqrt(v) / Math.sqrt(maxS));
+  const tip = tipFor("wrap-split", "tip-split");
+  const bin = p => p < 0.1 ? 0 : p < 0.35 ? 1 : p < 0.65 ? 2 : p < 0.9 ? 3 : 4;
+
+  [0, 500, 2000, 4733].forEach(v => {
+    svg.appendChild(el("line", { x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), class: "grid-line" }));
+    svg.appendChild(el("text", { x: m.l - 10, y: y(v) + 4, class: "tick", "text-anchor": "end" },
+      v.toLocaleString()));
+  });
+
+  SPLIT.forEach((d, i) => {
+    const bx = m.l + i * bw;
+    const h = Math.max(y(0) - y(d.s), 1.5);
+    svg.appendChild(el("rect", {
+      x: bx, y: y(d.s), width: Math.max(bw - 1.2, 1), height: h,
+      rx: 1.5, class: "bin-" + bin(d.p)
+    }));
+    const hit = el("rect", { x: bx - 1, y: m.t, width: bw + 2, height: ih, fill: "transparent" });
+    hit.addEventListener("mousemove", e => tip.show(e,
+      `<b>${d.s.toLocaleString()} samples</b><br>${Math.round(d.p * 100)}% positive class`));
+    hit.addEventListener("mouseleave", tip.hide);
+    svg.appendChild(hit);
+  });
+
+  svg.appendChild(el("line", { x1: m.l, x2: m.l + iw, y1: y(0), y2: y(0), class: "axis-line" }));
+  svg.appendChild(el("text", { x: m.l, y: H - 16, class: "tick", "text-anchor": "start" }, "largest shard"));
+  svg.appendChild(el("text", { x: m.l + iw, y: H - 16, class: "tick", "text-anchor": "end" }, "smallest"));
+})();
+</script>
