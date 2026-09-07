@@ -1,21 +1,23 @@
 """Shared fixtures: a tiny CPU-only LoRA model and a tiny tokenized dataset.
 
 Nothing here downloads weights or data, so the whole suite runs offline.
+
+Heavy imports (torch, transformers, peft) are done inside the fixtures rather
+than at module load, so torch-free test modules (e.g. the profiler and plot
+tests) still collect and run in an environment without the deep-learning stack
+installed.
 """
 
 import pytest
-import torch
-from datasets import Dataset
-from transformers import DistilBertConfig, DistilBertForSequenceClassification
-
-from src.models.lora_wrap import apply_lora
 
 SEQ_LEN = 8
 VOCAB = 100
 
 
-def make_tiny_base(num_labels: int = 2) -> DistilBertForSequenceClassification:
+def make_tiny_base(num_labels: int = 2):
     """Build a randomly initialized, very small DistilBERT classifier."""
+    from transformers import DistilBertConfig, DistilBertForSequenceClassification
+
     config = DistilBertConfig(
         vocab_size=VOCAB,
         dim=32,
@@ -28,8 +30,11 @@ def make_tiny_base(num_labels: int = 2) -> DistilBertForSequenceClassification:
     return DistilBertForSequenceClassification(config)
 
 
-def make_tiny_dataset(n: int = 32, seed: int = 0) -> Dataset:
+def make_tiny_dataset(n: int = 32, seed: int = 0):
     """Build a tokenized dataset with the same columns as the SST-2 loader."""
+    import torch
+    from datasets import Dataset
+
     generator = torch.Generator().manual_seed(seed)
     data = {
         "input_ids": torch.randint(0, VOCAB, (n, SEQ_LEN), generator=generator).tolist(),
@@ -43,6 +48,10 @@ def make_tiny_dataset(n: int = 32, seed: int = 0) -> Dataset:
 
 @pytest.fixture
 def tiny_model():
+    import torch
+
+    from src.models.lora_wrap import apply_lora
+
     torch.manual_seed(42)
     return apply_lora(make_tiny_base(), r=4, alpha=8, dropout=0.0)
 

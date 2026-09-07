@@ -1,0 +1,61 @@
+# M3 — A(K, r) accuracy-surface profiling on GLUE SST-2.
+# Inherits the M2 baseline setup; K and r are swept by the profiler, so the
+# scalar K/r below are only fallbacks for a single-cell run.
+
+# --- model / LoRA (r is swept via r_values) -------------------------------
+model_name: distilbert-base-uncased
+num_labels: 2
+max_len: 128
+r: 8                     # fallback; overridden per cell by r_values
+lora_alpha: 16
+lora_dropout: 0.05
+
+# --- federated setup (K is swept via K_values) ----------------------------
+num_clients: 100         # K_max
+alpha_dirichlet: 0.3     # non-IID concentration
+min_samples_per_client: 1
+max_samples_per_client: 100   # cap: we need the surface SHAPE, not SOTA accuracy
+K: 10                    # fallback; overridden per cell by K_values
+R: 10                    # communication rounds
+
+# --- local training -------------------------------------------------------
+local_epochs: 1
+batch_size: 16
+eval_batch_size: 64
+lr: 2.0e-4
+
+# --- reproducibility / io -------------------------------------------------
+seed: 42                 # fallback; overridden per cell by seeds
+device: auto             # auto | cuda | cpu
+output_dir: results/m3_profiles
+
+# --- profiling grid -------------------------------------------------------
+K_values: [2, 5, 10, 20, 40, 80]
+r_values: [2, 4, 8, 16]
+seeds: [42]              # 2nd seed [43] added for frontier cells via cell_subset
+
+# RQ1 curve first (r=8, all K), then RQ2 frontier (K in {5,10,20}, all r).
+priority_cells:
+  - [2, 8]
+  - [5, 8]
+  - [10, 8]
+  - [20, 8]
+  - [40, 8]
+  - [80, 8]
+  - [5, 2]
+  - [5, 4]
+  - [5, 16]
+  - [10, 2]
+  - [10, 4]
+  - [10, 16]
+  - [20, 2]
+  - [20, 4]
+  - [20, 16]
+
+# Frontier cells worth a 2nd seed (43) once the grid is done (see notebook).
+frontier_cells:
+  - [5, 8]
+  - [10, 8]
+  - [20, 8]
+  - [10, 4]
+  - [10, 16]
