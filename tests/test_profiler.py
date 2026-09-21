@@ -12,10 +12,12 @@ import pytest
 from omegaconf import OmegaConf
 
 from src.fl.profiler import (
+    TAIL_ROUNDS,
     aggregate_surface,
     load_surface,
     order_cells,
     profile_AKr,
+    tail_mean_acc,
 )
 
 
@@ -38,8 +40,10 @@ def cfg(tmp_path):
 def make_fake_run(calls=None):
     """A deterministic stand-in for run_federated that records call order.
 
-    Accuracy is a smooth function of (K, r, seed); adapter size is 0.1*r so
-    s0 = S/r is a constant 0.1, which the schema test checks.
+    Accuracy is a smooth function of (K, r, seed) and is flat across rounds, so
+    the tail mean equals that same value and the ordering/resume tests stay
+    readable. Adapter size is 0.1*r so s0 = S/r is a constant 0.1, which the
+    schema test checks.
     """
     def fake_run(cell, model=None, datasets=None):
         K, r, seed = int(cell.K), int(cell.r), int(cell.seed)
@@ -47,11 +51,34 @@ def make_fake_run(calls=None):
             calls.append((K, r, seed))
         S = 0.1 * r
         acc = 0.5 + 0.002 * K + 0.01 * r + 0.001 * (seed - 42)
-        comm = 2 * K * S * cell.R
+        per_round = 2 * K * S
         return {
             "adapter_size_mb": S,
             "final_acc": acc,
-            "history": [{"round": cell.R, "comm_mb_cumulative": comm}],
+            "history": [
+                {"round": i + 1, "test_acc": acc,
+                 "comm_mb_cumulative": per_round * (i + 1)}
+                for i in range(int(cell.R))
+            ],
+        }
+    return fake_run
+
+
+def make_history(accs, per_round_comm=1.0):
+    """Build a run history whose rounds carry the given accuracies."""
+    return [
+        {"round": i + 1, "test_acc": a, "comm_mb_cumulative": per_round_comm * (i + 1)}
+        for i, a in enumerate(accs)
+    ]
+
+
+def run_with_history(history, final_acc=None):
+    """A run_fn returning exactly this history (for accuracy-reporting tests)."""
+    def fake_run(cell, model=None, datasets=None):
+        return {
+            "adapter_size_mb": 0.1 * int(cell.r),
+            "final_acc": history[-1]["test_acc"] if final_acc is None else final_acc,
+            "history": history,
         }
     return fake_run
 
@@ -121,7 +148,8 @@ class TestProfileAKr:
         path = Path(cfg.output_dir) / "A_Kr_surface.json"
         document = json.loads(path.read_text())
         record = document["records"][0]
-        for field in ("K", "r", "seed", "acc", "comm_mb", "s0"):
+        for field in ("K", "r", "seed", "acc", "acc_final", "n_tail_rounds",
+                      "comm_mb", "s0"):
             assert field in record
         assert record["s0"] == pytest.approx(0.1)  # S/r = (0.1*r)/r
 
@@ -194,3 +222,113 @@ class TestLoadSurface:
         records = load_surface(path)
         assert len(records) == 1
         assert records[0]["K"] == 5
+
+
+class TestTailMeanAccHelper:
+    def test_averages_only_the_trailing_rounds(self):
+        history = make_history([0.0] * 20 + [0.8] * TAIL_ROUNDS)
+        mean, n = tail_mean_acc(history)
+        assert mean == pytest.approx(0.8)
+        assert n == TAIL_ROUNDS
+
+    def test_short_run_averages_everything_it_has(self):
+        mean, n = tail_mean_acc(make_history([0.6, 0.8]))
+        assert mean == pytest.approx(0.7)
+        assert n == 2
+
+    def test_respects_an_explicit_tail_length(self):
+        mean, n = tail_mean_acc(make_history([0.2, 0.4, 0.6, 0.8]), tail_rounds=2)
+        assert mean == pytest.approx(0.7)
+        assert n == 2
+
+    def test_history_without_test_acc_reports_nothing(self):
+        assert tail_mean_acc([{"round": 1, "comm_mb_cumulative": 1.0}]) == (None, 0)
+
+    def test_empty_history_reports_nothing(self):
+        assert tail_mean_acc([]) == (None, 0)
+
+
+class TestReportedAccuracy:
+    """A cell's accuracy must be the tail mean, not the single final round.
+
+    Federated accuracy keeps swinging after convergence because every round
+    draws a different set of non-IID clients, so the last round is a lottery
+    ticket: the R=30 probe converged around 0.77 but ended on 0.6376.
+    """
+
+    def test_acc_is_the_tail_mean_not_the_last_round(self, cfg):
+        accs = [0.80] * (TAIL_ROUNDS - 1) + [0.40]
+        out = profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                          run_fn=run_with_history(make_history(accs)))
+        record = out["records"][0]
+        expected = (0.80 * (TAIL_ROUNDS - 1) + 0.40) / TAIL_ROUNDS
+        assert record["acc"] == pytest.approx(expected)
+        assert record["acc"] > record["acc_final"]
+
+    def test_acc_final_keeps_the_single_last_round(self, cfg):
+        out = profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                          run_fn=run_with_history(make_history([0.9, 0.9, 0.3])))
+        assert out["records"][0]["acc_final"] == pytest.approx(0.3)
+
+    def test_warmup_rounds_are_excluded_from_the_tail(self, cfg):
+        # Mirrors the real probe: a long degenerate warm-up, then convergence.
+        accs = [0.5092] * 11 + [0.80] * TAIL_ROUNDS
+        out = profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                          run_fn=run_with_history(make_history(accs)))
+        assert out["records"][0]["acc"] == pytest.approx(0.80)
+
+    def test_records_how_many_rounds_were_averaged(self, cfg):
+        out = profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                          run_fn=run_with_history(make_history([0.7, 0.8, 0.9])))
+        assert out["records"][0]["n_tail_rounds"] == 3
+
+    def test_falls_back_to_final_acc_without_per_round_accuracy(self, cfg):
+        def no_test_acc(cell, model=None, datasets=None):
+            return {"adapter_size_mb": 0.8, "final_acc": 0.77,
+                    "history": [{"round": 1, "comm_mb_cumulative": 5.0}]}
+
+        record = profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                             run_fn=no_test_acc)["records"][0]
+        assert record["acc"] == pytest.approx(0.77)
+        assert record["n_tail_rounds"] == 1
+
+    def test_surface_aggregates_the_tail_means(self, cfg):
+        out = profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                          run_fn=run_with_history(make_history([0.6, 0.8])))
+        assert out["surface"][0]["acc_mean"] == pytest.approx(0.7)
+
+
+class TestHorizonGuard:
+    """Resume-skip matches (K, r, seed) only, so R must be guarded separately.
+
+    R was raised from 10 to 30 after the probe showed the shorter horizon never
+    left constant-class output. Without this guard the cells already on disk
+    would have been skipped and silently mixed into the new surface.
+    """
+
+    def _profile(self, cfg, **kw):
+        return profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                           run_fn=make_fake_run(), **kw)
+
+    def test_records_the_horizon_each_cell_was_run_at(self, cfg):
+        assert self._profile(cfg)["records"][0]["R"] == cfg.R
+
+    def test_resume_at_the_same_horizon_still_skips(self, cfg):
+        self._profile(cfg)
+        calls = []
+        profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                    run_fn=make_fake_run(calls))
+        assert calls == []
+
+    def test_resume_at_a_different_horizon_is_refused(self, cfg):
+        self._profile(cfg)
+        cfg.R = 30
+        with pytest.raises(ValueError, match=r"R=\[10\].*R=30"):
+            self._profile(cfg)
+
+    def test_a_legacy_surface_without_R_is_still_readable(self, cfg):
+        path = Path(cfg.output_dir)
+        path.mkdir(parents=True, exist_ok=True)
+        legacy = [{"K": 5, "r": 8, "seed": 42, "acc": 0.8, "comm_mb": 1.0, "s0": 0.1}]
+        (path / "A_Kr_surface.json").write_text(json.dumps({"records": legacy}))
+        assert self._profile(cfg)["records"][0]["acc"] == pytest.approx(0.8)

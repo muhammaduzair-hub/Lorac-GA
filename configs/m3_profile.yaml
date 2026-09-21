@@ -16,7 +16,12 @@ alpha_dirichlet: 0.3     # non-IID concentration
 min_samples_per_client: 1
 max_samples_per_client: 100   # cap: we need the surface SHAPE, not SOTA accuracy
 K: 10                    # fallback; overridden per cell by K_values
-R: 10                    # communication rounds
+R: 30                    # communication rounds. Raised from 10: the R=10 probe
+                         # (K=10, r=8) spent 11 rounds emitting a constant class
+                         # -- exactly 428/872 or 444/872 -- before learning at
+                         # all, and only converged near round 14. NOTE for M4:
+                         # C = R * K * S, so every bandwidth budget B is now 3x
+                         # more expensive than the values chosen for R=10.
 
 # --- local training -------------------------------------------------------
 local_epochs: 1

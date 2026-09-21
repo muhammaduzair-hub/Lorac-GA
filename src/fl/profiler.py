@@ -1,11 +1,25 @@
 """Two-variable accuracy-surface profiler A(K, r) for M3.
 
 Runs short FedAvg simulations over a grid of client counts ``K`` and LoRA
-ranks ``r`` and records the final test accuracy of each cell. The resulting
-surface is the empirical input to the joint-optimization GA in M4, whose cost
-model is ``C = R * K * r * s0`` with ``s0`` the per-unit-rank uplink payload.
+ranks ``r`` and records the test accuracy of each cell. The resulting surface
+is the empirical input to the joint-optimization GA in M4.
 
 Design notes:
+
+* **Tail-mean accuracy.** A cell's accuracy is the mean over its last
+  ``TAIL_ROUNDS`` rounds, not the single final round. Federated accuracy keeps
+  swinging after it converges because each round draws a different set of
+  non-IID clients: a measured R=30 probe (K=10, r=8) settled at a mean of
+  0.7743 over its converged rounds but with a std of 0.0649, and its round 30
+  happened to land at 0.6376. Recording that one round would have written a
+  value 0.14 below the truth, in a direction that changes cell to cell, and the
+  effect of ``K`` would sit underneath that noise. Averaging the tail costs no
+  extra compute and cut the standard error to 0.0177 on the same data.
+* **Cost model caveat.** M4's ``C = R * K * r * s0`` treats ``s0 = S / r`` as a
+  rank-independent constant. It is not: ``S`` also carries the classification
+  head, which does not depend on ``r``, so ``s0`` drifts ~5.7x across r=2..16.
+  Use the per-cell ``adapter_size_mb`` recorded here rather than rebuilding
+  ``S`` from ``r * s0``.
 
 * **Isolation.** Each (K, r, seed) cell trains in its own ``output_dir``
   (``<base>/cells/K{K}_r{r}_s{seed}``). :func:`run_federated` resumes from any
@@ -36,8 +50,12 @@ from omegaconf import OmegaConf
 
 logger = logging.getLogger(__name__)
 
+#: Rounds averaged into a cell's reported accuracy (see the module docstring).
+TAIL_ROUNDS = 10
+
 #: Fields every per-triple record in the surface JSON carries.
-RECORD_FIELDS = ("K", "r", "seed", "acc", "comm_mb", "s0", "adapter_size_mb")
+RECORD_FIELDS = ("K", "r", "seed", "R", "acc", "acc_final", "n_tail_rounds",
+                 "comm_mb", "s0", "adapter_size_mb")
 
 
 def _surface_path(cfg, surface_path: str | Path | None) -> Path:
@@ -159,6 +177,63 @@ def _cell_cfg(cfg, K: int, r: int, seed: int, base_dir: Path):
     return cell
 
 
+def _reject_mismatched_horizon(records, cfg, path: Path) -> None:
+    """Refuse to extend a surface whose cells were run at a different ``R``.
+
+    Resume-skip matches on (K, r, seed) alone, so without this check a surface
+    started at one round count and finished at another would silently mix the
+    two: cells already present keep their old accuracy while new cells get the
+    new horizon, and nothing in the file says which is which. Accuracy and
+    ``comm_mb`` both move with ``R``, so the resulting surface -- and the GA
+    trained on it -- would be comparing cells that were never comparable.
+
+    Args:
+        records: Records loaded from an existing surface JSON.
+        cfg: The config this call is about to profile with.
+        path: Where the surface JSON lives, quoted in the error.
+
+    Raises:
+        ValueError: If any existing record was produced at a different ``R``.
+    """
+    current = int(cfg.R)
+    other = sorted({int(rec["R"]) for rec in records if "R" in rec} - {current})
+    if not other:
+        return
+    raise ValueError(
+        f"{path} holds cells profiled at R={other} but this run uses R={current}. "
+        f"Accuracy and comm_mb both depend on R, so the cells are not comparable "
+        f"and resume-skip would mix them silently. Move or delete that file to "
+        f"start a fresh surface at R={current}, or set R back to {other[0]}."
+    )
+
+
+def tail_mean_acc(
+    history: Sequence[Mapping[str, Any]],
+    tail_rounds: int = TAIL_ROUNDS,
+) -> tuple[float | None, int]:
+    """Average the accuracy of a run's last rounds.
+
+    Args:
+        history: Per-round records from :func:`src.fl.simulation.run_federated`,
+            each holding ``test_acc``.
+        tail_rounds: How many trailing rounds to average. A run shorter than
+            this averages everything it has.
+
+    Returns:
+        ``(mean_accuracy, rounds_averaged)``, or ``(None, 0)`` when no round
+        carries a ``test_acc`` — which is the case for injected test doubles
+        that only report ``final_acc``.
+    """
+    tail = [
+        float(h["test_acc"])
+        for h in list(history)[-tail_rounds:]
+        if h.get("test_acc") is not None
+    ]
+    if not tail:
+        return None, 0
+    return statistics.fmean(tail), len(tail)
+
+
 def profile_AKr(
     cfg,
     K_values: Sequence[int],
@@ -173,10 +248,13 @@ def profile_AKr(
     """Profile the accuracy surface A(K, r) over a grid of cells.
 
     For each (K, r, seed) triple a short federated run is executed at that
-    client count and LoRA rank; the final test accuracy, total communication
-    and measured per-unit-rank payload ``s0 = S / r`` are recorded. The surface
-    JSON is updated after every cell and existing triples are skipped, so the
-    run is crash-safe and resumable.
+    client count and LoRA rank; its accuracy (the mean over the last
+    ``TAIL_ROUNDS`` rounds -- see the module docstring for why the single final
+    round is too noisy), total communication and measured per-unit-rank payload
+    ``s0 = S / r`` are recorded. The single final round is kept alongside as
+    ``acc_final`` so the smoothing stays auditable. The surface JSON is updated
+    after every cell and existing triples are skipped, so the run is crash-safe
+    and resumable.
 
     Args:
         cfg: Base OmegaConf config (see ``configs/m3_profile.yaml``). ``K``,
@@ -206,6 +284,7 @@ def profile_AKr(
     path = _surface_path(cfg, surface_path)
 
     records = load_surface(path)
+    _reject_mismatched_horizon(records, cfg, path)
     done = {(int(r["K"]), int(r["r"]), int(r["seed"])) for r in records}
 
     cells = order_cells(K_values, r_values, priority_cells, cell_subset)
@@ -226,15 +305,22 @@ def profile_AKr(
             result = run_fn(cell, model=None, datasets=datasets)
 
             S = float(result["adapter_size_mb"])
-            acc = result["final_acc"]
             history = result.get("history") or []
             comm_mb = float(history[-1]["comm_mb_cumulative"]) if history else 0.0
+
+            acc_final = result["final_acc"]
+            acc, n_tail = tail_mean_acc(history)
+            if acc is None:  # history without test_acc: fall back to the run's own
+                acc, n_tail = acc_final, 1
 
             record = {
                 "K": int(K),
                 "r": int(r),
                 "seed": int(seed),
+                "R": int(cfg.R),
                 "acc": float(acc) if acc is not None else None,
+                "acc_final": float(acc_final) if acc_final is not None else None,
+                "n_tail_rounds": int(n_tail),
                 "comm_mb": comm_mb,
                 "s0": S / r,
                 "adapter_size_mb": S,
@@ -243,8 +329,12 @@ def profile_AKr(
             done.add(triple)
             _save_surface(path, records)  # incremental: crash = nothing lost
             logger.info(
-                "cell K=%d r=%d seed=%d -> acc=%.4f, comm=%.1f MB, s0=%.4f",
-                K, r, seed, record["acc"] if record["acc"] is not None else float("nan"),
+                "cell K=%d r=%d seed=%d -> acc=%.4f (mean of last %d rounds; "
+                "final round %.4f), comm=%.1f MB, s0=%.4f",
+                K, r, seed,
+                record["acc"] if record["acc"] is not None else float("nan"),
+                n_tail,
+                record["acc_final"] if record["acc_final"] is not None else float("nan"),
                 comm_mb, record["s0"],
             )
 
