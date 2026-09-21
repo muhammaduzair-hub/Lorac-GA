@@ -38,6 +38,12 @@ matplotlib>=3.7
 seaborn>=0.12
 pandas>=2.0
 
+# --- tests ----------------------------------------------------------------
+# The notebooks gate training on `pytest tests/ -q` before any GPU work, so the
+# runner has to be installed even though nothing under src/ imports it. It is
+# missing from the Kaggle image, which made that gate fail to run at all.
+pytest>=7.4
+
 # --- not currently imported, kept because the stack expects it ------------
 # accelerate is only required if we adopt the HuggingFace Trainer; our FedAvg
 # loop is plain torch. The Kaggle image ships it anyway.

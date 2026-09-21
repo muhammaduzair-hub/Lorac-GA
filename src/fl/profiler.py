@@ -48,6 +48,8 @@ from typing import Any, Callable, Mapping, Sequence
 
 from omegaconf import OmegaConf
 
+from src.utils.env_info import collect_env
+
 logger = logging.getLogger(__name__)
 
 #: Rounds averaged into a cell's reported accuracy (see the module docstring).
@@ -119,9 +121,18 @@ def aggregate_surface(records: Sequence[Mapping[str, Any]]) -> list[dict[str, An
 
 
 def _save_surface(path: Path, records: Sequence[Mapping[str, Any]]) -> None:
-    """Write the ``{records, surface}`` document atomically-ish and small."""
+    """Write the ``{env, records, surface}`` document.
+
+    The ``env`` block carries the package versions, CUDA device and git commit
+    the surface was produced with. Kaggle resolves its own package versions and
+    rebuilds its image regularly, so pinning them is not workable; recording
+    what actually ran is what makes the surface reproducible later. It is
+    rewritten with every cell, so a surface finished across several sessions
+    reports the environment of the session that wrote the last cell.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     document = {
+        "env": collect_env(),
         "records": list(records),
         "surface": aggregate_surface(records),
     }

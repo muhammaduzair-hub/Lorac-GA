@@ -332,3 +332,23 @@ class TestHorizonGuard:
         legacy = [{"K": 5, "r": 8, "seed": 42, "acc": 0.8, "comm_mb": 1.0, "s0": 0.1}]
         (path / "A_Kr_surface.json").write_text(json.dumps({"records": legacy}))
         assert self._profile(cfg)["records"][0]["acc"] == pytest.approx(0.8)
+
+
+class TestEnvBlock:
+    """The surface JSON has to say what produced it (CLAUDE.md reproducibility)."""
+
+    def test_surface_json_records_the_environment(self, cfg):
+        profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                    run_fn=make_fake_run())
+        document = json.loads(
+            (Path(cfg.output_dir) / "A_Kr_surface.json").read_text())
+        assert "git_commit" in document["env"]
+        assert "torch" in document["env"]
+
+    def test_env_block_does_not_disturb_resume(self, cfg):
+        profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                    run_fn=make_fake_run())
+        calls = []
+        profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
+                    run_fn=make_fake_run(calls))
+        assert calls == []
