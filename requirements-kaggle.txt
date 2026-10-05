@@ -26,6 +26,7 @@
 
 # --- core stack (imported by src/) ---------------------------------------
 torch>=2.0
+torchvision>=0.15        # EMNIST/MNIST loaders (M0); ships with the Kaggle image
 numpy>=1.24
 transformers>=4.36.0
 peft>=0.7.0

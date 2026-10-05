@@ -1,6 +1,7 @@
 # Local (CPU) development + unit tests. Python 3.11.
 # numpy is capped: torch 2.2.0 wheels are built against numpy 1.x and crash on 2.x.
 torch==2.2.0
+torchvision==0.17.0
 numpy>=1.24,<2
 transformers==4.36.0
 peft==0.7.0

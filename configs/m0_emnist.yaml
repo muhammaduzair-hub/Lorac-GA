@@ -1,0 +1,33 @@
+# M0 — LoRaC-GA replication on EMNIST-Balanced (K-only). See docs/M0_EMNIST_Validation.md.
+# [paper] = value from Solat & Lee 2025;  [assumed] = our choice, paper is silent.
+
+# --- data -----------------------------------------------------------------
+data_root: data
+num_classes: 47          # [paper] EMNIST Balanced
+num_clients: 100         # [paper] K_max
+alpha_dirichlet: 0.3     # [paper]
+min_samples_per_client: 1
+
+# --- model ([assumed]: paper says only "compact transformer + LoRA") -------
+vit: {dim: 128, depth: 4, heads: 4, mlp_dim: 256, patch: 4}
+backbone_path: results/m0_emnist/backbone.pt   # MNIST-pretrained, frozen in FL
+lora_targets: [q, v]
+r: 7                     # [assumed] tuned so S ~= 0.0833 MB (see closest_rank)
+lora_alpha: 14           # alpha = 2r
+target_S_mb: 0.0833      # [paper]
+
+# --- backbone pretraining ([assumed]) ---------------------------------------
+pretrain: {epochs: 5, lr: 1.0e-3, batch_size: 128}
+
+# --- federated setup --------------------------------------------------------
+R: 10                    # [paper] rounds
+local_epochs: 1          # [assumed]
+batch_size: 32           # [assumed]
+eval_batch_size: 512
+lr: 1.0e-3               # [assumed]
+fedprox_mu: 0.01         # [paper] FedProx baseline mu
+
+# --- reproducibility / io ----------------------------------------------------
+seed: 42
+device: auto
+output_dir: results/m0_emnist
