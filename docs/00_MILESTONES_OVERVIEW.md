@@ -8,6 +8,7 @@ Thesis budget-aware joint optimization karti hai: ek fixed uplink budget ke anda
 
 | # | Milestone | Hafte | Status | File |
 |---|-----------|-------|--------|------|
+| M0 | EMNIST Replication of LoRaC-GA (validation, K-only) | pehle | ⬜ | M0_EMNIST_Validation.md |
 | M1 | Environment & Pipeline Setup | 1–2 | ✅ COMPLETE | M1_Setup_Pipeline.md |
 | M2 | Federated LoRA Baseline (FedAvg, fixed K) | 3–5 | ✅ COMPLETE — 85.21%, S=2.9583 MB, 591.7 MB | M2_Federated_Baseline.md |
 | M3 | A(K, r) Surface Profiling | 6–8 | ⬜ | M3_AK_Profiling.md |
@@ -17,6 +18,7 @@ Thesis budget-aware joint optimization karti hai: ek fixed uplink budget ke anda
 
 ## RQ Mapping (defense ke liye yaad rakhein)
 
+- **M0** = base-paper validation: same dataset (EMNIST) par GA ka trend reproduce — Sir ka faisla
 - **M1–M2** = groundwork (pipeline + baseline)
 - **M3** = **RQ1** — characterization: kya A(K) real LLM par saturating structure dikhati hai?
 - **M4** = **RQ2** — joint budget allocation: optimal (K*, r*), fixed-r par gain ← contribution

@@ -25,6 +25,7 @@ Single hypothesis, single pass/fail outcome.
 ## 3. In Scope vs Out of Scope
 
 ### In Scope ✅
+- **M0 (validation only)**: base paper ka K-only GA EMNIST Balanced par replicate karna (Sir ka faisla) — LLM milestones se pehle
 - Ek chhota LLM: DistilBERT-base (66M params), ya RoBERTa-base (125M), ya GPT-2 small (124M)
 - Ek task family: GLUE text classification (SST-2 ya MNLI)
 - GA-based K-selection under bandwidth budget B
