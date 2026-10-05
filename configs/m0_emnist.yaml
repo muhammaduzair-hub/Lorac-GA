@@ -20,7 +20,10 @@ target_S_mb: 0.0833      # [paper]
 pretrain: {epochs: 5, lr: 1.0e-3, batch_size: 128}
 
 # --- federated setup --------------------------------------------------------
+K: 10                    # clients per round (profiling sweeps this)
 R: 10                    # [paper] rounds
+tail_rounds: 3           # [assumed] A(K) = mean acc over last 3 rounds (non-IID noise)
+prox_mu: 0.0             # 0 = FedAvg; set to fedprox_mu for the FedProx baseline
 local_epochs: 1          # [assumed]
 batch_size: 32           # [assumed]
 eval_batch_size: 512
