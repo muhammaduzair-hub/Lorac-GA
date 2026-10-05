@@ -42,6 +42,7 @@ Existing repo defaults (CLAUDE.md §6) paper se match karte hain: P=20, G=30, p_
 ## ⚠️ Paper mein Honest Red Flags (replication se pehle jaan lein)
 
 1. **Budget kabhi bind nahi karta.** `R·S = 0.833 MB` per client. `B/C(K) ≥ 1` jab tak `K ≤ B/0.833` (B=10 → K≤12; B=50 → K≤60; B≥100 → har K≤100 feasible). Accuracy `A ≤ 1`, to `min(A, B/C) = A` is region mein → GA sirf `argmax A(K)` karta hai, budget ka koi asar nahi.
+1b. **Aur sakht:** feasible set (`C ≤ B`) par `B/C ≥ 1 ≥ A` hamesha, to `min(A, B/C) = A` *har* feasible K par — budget sirf cap `K ≤ B/(R·S)` ke zariye kaam karta hai, min term kabhi bind nahi karta. GA effectively `argmax A(K)` over `K ≤ cap(B)` hai.
 2. **Table 3 apne hi formula se match nahi karta.** B=10 par K=5 feasible hai (cost 4.17 MB) aur A=93.1% > K=2 ki 85.1% — to formula K=2 nahi chunta. B=100/400/1000/4000 par sab K feasible hain, phir bhi K* = 5, 5, 12, 10 (non-monotonic; 12 aur 10 dono 96.6%).
 3. **96.6% shak-aana hai.** EMNIST-Balanced par centralized best published results ~91% ke aas-paas hain (meri yaad ke mutabiq — verify karein). Non-IID FL, R=10 mein 96.6% reproduce hona mushkil hai.
 4. **S paper ke EMNIST model se nahi, FeDeRA (NLP) se liya gaya.**
@@ -69,3 +70,11 @@ GA M4 mein `(K, r)` tak extend hoga — isliye K-only core saaf rakhein.
 ## Time Box
 
 1 hafta (Kaggle: ~2–4 GPU hrs — chhota model, 28×28 images). Agar paper ka setup zyada samay le, to Fig 2 (FedProx/CL) sab se pehle cut karein; Table 3 + Fig 3 core hain.
+
+## Analysis chalana (Kaggle ke baad, local, seconds)
+
+```bash
+git fetch && git checkout origin/kaggle-results-m0 -- results/m0_emnist
+python -m src.ga.analysis --surface results/m0_emnist/A_Kr_surface.json --r 7 --out results/m0_emnist/analysis
+```
+Output: `analysis.json`, `comparison.md` (paper-vs-ours table + computed observations), `convergence.{png,pdf}` (Fig 3 analogue). Fig 2 analogue (FedAvg/FedProx/CL) alag step (3f).

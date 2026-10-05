@@ -159,3 +159,43 @@ def plot_AKr_heatmap(
     fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     return out_path
+
+
+def plot_convergence(
+    curves: Mapping[str, Sequence[Sequence[float]]],
+    out_path: str | Path,
+    title: str = "Fitness vs iteration",
+    dpi: int = 300,
+) -> Path:
+    """Plot mean best-so-far fitness per iteration for each search method.
+
+    Args:
+        curves: ``{method: [history per seed]}`` with equal-length histories.
+        out_path: Output figure path (extension picks the format).
+        title: Figure title.
+        dpi: Raster resolution for non-vector formats.
+
+    Returns:
+        The path the figure was written to.
+    """
+    import numpy as np
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    for method, runs in curves.items():
+        arr = np.asarray(runs, dtype=float)
+        mean, std = arr.mean(axis=0), arr.std(axis=0)
+        x = np.arange(1, arr.shape[1] + 1)
+        ax.plot(x, mean, linewidth=1.8, label=method)
+        ax.fill_between(x, mean - std, mean + std, alpha=0.2)
+    ax.set_xlabel("Iteration (generation)")
+    ax.set_ylabel("Best fitness $f(K)$")
+    ax.set_title(title)
+    ax.grid(True, linestyle=":", alpha=0.5)
+    ax.legend()
+    fig.tight_layout()
+
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+    return out_path

@@ -74,13 +74,41 @@ def max_feasible_K(B: float, R: int, S: float, K_max: int) -> int:
     return min(K_max, int(B // (R * S)))
 
 
+def interpolate_accuracy(profile: Mapping[int, float]) -> Callable[[int], float]:
+    """Build A(K) from a profiled accuracy table by linear interpolation.
+
+    Values outside the profiled K range are held constant at the nearest end.
+
+    Args:
+        profile: Profiled accuracy A(K) keyed by client count.
+
+    Returns:
+        Callable mapping K to its (interpolated) accuracy.
+
+    Raises:
+        ValueError: If the profile is empty.
+    """
+    if not profile:
+        raise ValueError("profile must contain at least one (K, accuracy) point.")
+    ks = sorted(profile)
+    accs = [profile[k] for k in ks]
+
+    def A(K: int) -> float:
+        i = bisect_left(ks, K)
+        if i == 0:
+            return accs[0]
+        if i == len(ks):
+            return accs[-1]
+        k0, k1 = ks[i - 1], ks[i]
+        return accs[i - 1] + (accs[i] - accs[i - 1]) * (K - k0) / (k1 - k0)
+
+    return A
+
+
 def make_fitness(
     profile: Mapping[int, float], B: float, R: int, S: float
 ) -> Callable[[int], float]:
     """Build f(K) = min(A(K), B / C(K)) from a profiled accuracy table.
-
-    A(K) is linearly interpolated between profiled K values and held constant
-    outside the profiled range.
 
     Args:
         profile: Profiled accuracy A(K) keyed by client count.
@@ -94,20 +122,5 @@ def make_fitness(
     Raises:
         ValueError: If the profile is empty.
     """
-    if not profile:
-        raise ValueError("profile must contain at least one (K, accuracy) point.")
-    ks = sorted(profile)
-    accs = [profile[k] for k in ks]
-
-    def f(K: int) -> float:
-        i = bisect_left(ks, K)
-        if i == 0:
-            a = accs[0]
-        elif i == len(ks):
-            a = accs[-1]
-        else:
-            k0, k1 = ks[i - 1], ks[i]
-            a = accs[i - 1] + (accs[i] - accs[i - 1]) * (K - k0) / (k1 - k0)
-        return fitness(K, a, B, R, S)
-
-    return f
+    A = interpolate_accuracy(profile)
+    return lambda K: fitness(K, A(K), B, R, S)
