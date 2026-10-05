@@ -320,7 +320,7 @@ def profile_AKr(
             comm_mb = float(history[-1]["comm_mb_cumulative"]) if history else 0.0
 
             acc_final = result["final_acc"]
-            acc, n_tail = tail_mean_acc(history)
+            acc, n_tail = tail_mean_acc(history, cfg.get("tail_rounds", TAIL_ROUNDS))
             if acc is None:  # history without test_acc: fall back to the run's own
                 acc, n_tail = acc_final, 1
 

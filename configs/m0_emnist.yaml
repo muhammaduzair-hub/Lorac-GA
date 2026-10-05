@@ -30,6 +30,11 @@ eval_batch_size: 512
 lr: 1.0e-3               # [assumed]
 fedprox_mu: 0.01         # [paper] FedProx baseline mu
 
+# --- A(K) profiling grid (dense around the paper's K* range of 2-12) --------
+K_values: [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30, 50, 100]
+r_values: [7]            # K-only profile: single rank (profile_AKr reused)
+seeds: [42]
+
 # --- reproducibility / io ----------------------------------------------------
 seed: 42
 device: auto

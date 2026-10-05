@@ -352,3 +352,15 @@ class TestEnvBlock:
         profile_AKr(cfg, K_values=[5], r_values=[8], seeds=[42],
                     run_fn=make_fake_run(calls))
         assert calls == []
+
+
+def test_profile_honors_cfg_tail_rounds(cfg):
+    """cfg.tail_rounds overrides the default tail so short horizons (M0, R=10) work."""
+    def fake_run(cell, model=None, datasets=None):
+        hist = make_history([0.1, 0.2, 0.9])
+        return {"adapter_size_mb": 0.1, "final_acc": 0.9, "history": hist}
+
+    cfg.tail_rounds = 2
+    out = profile_AKr(cfg, K_values=[3], r_values=[8], seeds=[42], run_fn=fake_run)
+    rec = out["records"][0]
+    assert rec["acc"] == pytest.approx(0.55) and rec["n_tail_rounds"] == 2
