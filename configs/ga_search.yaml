@@ -1,1 +1,11 @@
-# placeholder — config pending
+# GA hyperparameters (Solat & Lee 2025, Table 2). Shared by M0 (EMNIST) and M4.
+seed: 42
+K_max: 100               # total clients
+R: 10                    # communication rounds
+budgets_mb: [10, 50, 100, 400, 1000, 4000]
+population_size: 20      # P
+generations: 30          # G
+p_c: 0.5
+p_m: 0.2
+elitism: 0.1             # rho
+tournament_size: 3
